@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BD Electricity Bill Pro</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- HTML2PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+        :root {
+            --primary: #4361ee;
+            --primary-gradient: linear-gradient(135deg, #4361ee, #3a0ca3);
+            --bg-body: #f0f2f5;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --text-main: #2b2d42;
+            --text-sub: #8d99ae;
+            --input-bg: #ffffff;
+            --shadow-card: 0 10px 30px -10px rgba(67, 97, 238, 0.15);
+            --radius: 24px;
+            --success: #2ecc71;
+            --error: #e74c3c;
+        }
+
+        [data-theme="dark"] {
+            --primary: #4cc9f0;
+            --primary-gradient: linear-gradient(135deg, #4361ee, #4cc9f0);
+            --bg-body: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --input-bg: #1e293b;
+            --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        /* বডি প্যাডিং ঠিক রাখা হয়েছে */
+        body { background-color: var(--bg-body); color: var(--text-main); min-height: 100vh; padding-bottom: 120px; transition: background 0.3s ease; }
+
+        body::before { content: ''; position: fixed; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(67, 97, 238, 0.1) 0%, rgba(0,0,0,0) 50%), radial-gradient(circle, rgba(76, 201, 240, 0.1) 0%, rgba(0,0,0,0) 50%); z-index: -1; animation: bgMove 20s infinite alternate; }
+        @keyframes bgMove { 0% { transform: translate(0,0); } 100% { transform: translate(-50px,-50px); } }
+
+        /* HEADER */
+        header { padding: 85px 20px 20px; text-align: left; }
+        header h1 { font-size: 32px; font-weight: 800; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
+        header p { font-size: 15px; color: var(--text-sub); font-weight: 500; }
+
+        .container { padding: 0 20px; max-width: 500px; margin: 0 auto; }
+        .card { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow-card); animation: slideUp 0.5s ease; }
+        h2 { font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: var(--text-main); }
+        h2 i { color: var(--primary); }
+
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--text-sub); font-weight: 600; text-transform: uppercase; }
+        .input-wrapper { display: flex; align-items: center; background: var(--input-bg); border-radius: 16px; padding: 4px 16px; border: 2px solid transparent; }
+        .input-wrapper:focus-within { border-color: var(--primary); }
+        .input-wrapper i { color: var(--text-sub); font-size: 16px; margin-right: 12px; }
+        input, select { width: 100%; border: none; background: transparent; padding: 14px 0; font-size: 16px; color: var(--text-main); outline: none; }
+
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 16px; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .btn-primary { background: var(--primary-gradient); color: white; box-shadow: 0 10px 20px -5px rgba(67, 97, 238, 0.4); }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); margin-top: 15px; }
+
+        .result-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: var(--text-sub); border-bottom: 1px dashed rgba(0,0,0,0.05); padding-bottom: 10px; }
+        .result-row span:last-child { font-weight: 600; color: var(--text-main); }
+        .total-box { background: var(--primary-gradient); padding: 20px; border-radius: 16px; color: white; text-align: center; margin-top: 10px; }
+        .total-box .amount { font-size: 30px; font-weight: 800; display: block; margin-top: 5px; }
+
+        /* Ad container style */
+        .ad-container { 
+            text-align: center; 
+            margin: 15px 0; 
+            padding: 10px;
+            background: var(--glass-bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-card);
+        }
+        .ad-label {
+            font-size: 10px;
+            color: var(--text-sub);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* BOTTOM NAV FIX: 20px এ নামানো হয়েছে */
+        .bottom-nav { 
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 90%; 
+            max-width: 400px; 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 24px; 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 12px 30px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1); 
+            z-index: 100; 
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-sub); font-size: 10px; font-weight: 600; cursor: pointer; gap: 4px; transition: 0.3s; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 20px; padding: 8px; }
+
+        .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); animation: fadeIn 0.3s; }
+        .popup-box { background: var(--input-bg); padding: 30px; border-radius: 28px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 1px solid var(--glass-border); animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .popup-icon { width: 60px; height: 60px; border-radius: 50%; background: rgba(67, 97, 238, 0.1); color: var(--primary); display: flex; justify-content: center; align-items: center; font-size: 28px; margin: 0 auto 15px; }
+        .popup-icon.error { background: rgba(231, 76, 60, 0.1); color: var(--error); }
+        .popup-icon.success { background: rgba(46, 204, 113, 0.1); color: var(--success); }
+        .popup-btn { background: var(--primary-gradient); color: white; padding: 12px; width: 100%; border-radius: 14px; border: none; font-weight: 600; cursor: pointer; }
+
+        .section { display: none; }
+        .section.active { display: block; }
+        details summary { list-style: none; font-size: 13px; color: var(--primary); font-weight: 600; padding: 10px; cursor: pointer; background: rgba(67,97,238,0.05); border-radius: 12px; text-align: center; margin-bottom: 10px;}
+        .chart-container { position: relative; height: 250px; width: 100%; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+  </head>
+  <body>
+
+    <div class="container">
+      <header>
+        <h1>Electricity Bill BD</h1>
+        <p>Smart Calculation System</p>
+      </header>
+
+      <!-- Home -->
+      <div id="home" class="section active">
+        <div class="card">
+          <h2><i class="fas fa-bolt"></i> Calculator</h2>
+          <div class="input-group"><label>Connection Type</label><div class="input-wrapper"><i class="fas fa-user-tag"></i><select id="customerType"><option value="residential">Residential (Home)</option><option value="commercial">Commercial (Office)</option><option value="industrial">Industrial (Factory)</option></select></div></div>
+          <div class="input-group"><label>Units (kWh)</label><div class="input-wrapper"><i class="fas fa-tachometer-alt"></i><input type="number" id="units" placeholder="e.g. 150"></div></div>
+          <details>
+            <summary>Add Extra Charges (Meter, Fuel, VAT) ▼</summary>
+            <div style="margin-top: 15px;">
+              <div class="input-group"><label>Meter Rent</label><div class="input-wrapper"><i class="fas fa-file-invoice"></i><input type="number" id="meterRent" value="40"></div></div>
+              <div class="input-group"><label>Service Charge</label><div class="input-wrapper"><i class="fas fa-concierge-bell"></i><input type="number" id="serviceCharge" value="30"></div></div>
+              <div class="input-group"><label>Fuel Adj. (BDT)</label><div class="input-wrapper"><i class="fas fa-gas-pump"></i><input type="number" id="fuelAdj" value="0"></div></div>
+              <div class="input-group"><label>VAT (%)</label><div class="input-wrapper"><i class="fas fa-percent"></i><input type="number" id="vatRate" value="5"></div></div>
+            </div>
+          </details>
+          <div style="height:15px"></div>
+          <button class="btn btn-primary" onclick="calculateBill()">Calculate Bill <i class="fas fa-arrow-right"></i></button>
+        </div>
+
+        <!-- Advertisement Container -->
+        <div class="ad-container">
+            <div class="ad-label">Advertisement</div>
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : '803d1a7dab3471c4d3f9acfadf054f2b',
+                    'format' : 'iframe',
+                    'height' : 50,
+                    'width' : 320,
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="//www.highperformanceformat.com/803d1a7dab3471c4d3f9acfadf054f2b/invoke.js"></script>
+        </div>
+
+        <div id="resultCard" class="card" style="display: none;">
+          <div id="billContent">
+            <h2><i class="fas fa-receipt"></i> Summary</h2>
+            <div class="result-row"><span>Energy Cost</span><span id="resEnergy">0.00</span></div>
+            <div class="result-row"><span>Meter Rent</span><span id="resMeter">0.00</span></div>
+            <div class="result-row"><span>Service Charge</span><span id="resService">0.00</span></div>
+            <div class="result-row"><span>Fuel Adj.</span><span id="resFuel">0.00</span></div>
+            <div class="result-row"><span>VAT (5%)</span><span id="resVat">0.00</span></div>
+            <div class="total-box"><small>Total Payable</small><span class="amount">৳ <span id="resTotal">0.00</span></span></div>
+          </div>
+          <button class="btn btn-outline" onclick="exportPDF()"><i class="fas fa-download"></i> Download PDF</button>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div id="history" class="section">
+        <div class="card">
+          <h2><i class="fas fa-history"></i> History</h2>
+          <div id="historyList"></div>
+          <button class="btn btn-outline" onclick="clearHistory()" style="border-color:#ff4757; color:#ff4757;">Clear All</button>
+        </div>
+      </div>
+
+      <!-- Graph -->
+      <div id="graph" class="section">
+        <div class="card"><h2><i class="fas fa-chart-line"></i> Usage Trends</h2><div class="chart-container"><canvas id="usageChart"></canvas></div></div>
+        <div class="card"><h2><i class="fas fa-money-bill-wave"></i> Cost Trends</h2><div class="chart-container"><canvas id="costChart"></canvas></div></div>
+      </div>
+
+      <!-- Settings -->
+      <div id="settings" class="section">
+        <div class="card">
+          <h2><i class="fas fa-sliders-h"></i> Settings</h2>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <label style="margin:0; font-size:14px;">Dark Mode</label>
+            <input type="checkbox" id="themeToggle" style="transform: scale(1.3);">
+          </div>
+          <hr style="border:0; border-top:1px solid var(--glass-border); margin:15px 0;">
+          <h3>Residential Rates (Per Unit)</h3>
+          <div class="input-group"><label>0-50 Units</label><div class="input-wrapper"><input type="number" id="rate1"></div></div>
+          <div class="input-group"><label>51-75 Units</label><div class="input-wrapper"><input type="number" id="rate2"></div></div>
+          <div class="input-group"><label>76-200 Units</label><div class="input-wrapper"><input type="number" id="rate3"></div></div>
+          <div class="input-group"><label>201-300 Units</label><div class="input-wrapper"><input type="number" id="rate4"></div></div>
+          <div class="input-group"><label>301-400 Units</label><div class="input-wrapper"><input type="number" id="rate5"></div></div>
+          <div class="input-group"><label>401-600 Units</label><div class="input-wrapper"><input type="number" id="rate6"></div></div>
+          <div class="input-group"><label>600+ Units</label><div class="input-wrapper"><input type="number" id="rate7"></div></div>
+          <button class="btn btn-primary" onclick="saveSettings()">Save Rates</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Popup -->
+    <div id="customPopup" class="popup-overlay">
+      <div class="popup-box">
+        <div id="popupIcon" class="popup-icon"><i class="fas fa-check"></i></div>
+        <h3 id="popupTitle" class="popup-title">Success</h3>
+        <p id="popupMsg" class="popup-msg">Operation successful.</p>
+        <button class="popup-btn" onclick="closePopup()">OK, Got it!</button>
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <div class="nav-item active" onclick="switchTab('home')"><i class="fas fa-home"></i><span>Home</span></div>
+      <div class="nav-item" onclick="switchTab('history')"><i class="fas fa-clock"></i><span>History</span></div>
+      <div class="nav-item" onclick="switchTab('graph')"><i class="fas fa-chart-bar"></i><span>Stats</span></div>
+      <div class="nav-item" onclick="switchTab('settings')"><i class="fas fa-cog"></i><span>Config</span></div>
+    </nav>
+
+<script>
+        // --- POPUP LOGIC ---
+        function showPopup(title, msg, type) {
+            const overlay = document.getElementById('customPopup');
+            const iconDiv = document.getElementById('popupIcon');
+            const iconI = iconDiv.querySelector('i');
+            document.getElementById('popupTitle').innerText = title;
+            document.getElementById('popupMsg').innerText = msg;
+            iconDiv.className = 'popup-icon'; iconI.className = '';
+            if(type === 'error') { iconDiv.classList.add('error'); iconI.className = 'fas fa-exclamation-triangle'; } 
+            else { iconDiv.classList.add('success'); iconI.className = 'fas fa-check-circle'; }
+            overlay.style.display = 'flex';
+        }
+        function closePopup() { document.getElementById('customPopup').style.display = 'none'; }
+
+        // --- DATA ---
+        let historyData = JSON.parse(localStorage.getItem('billHistory')) || [];
+        let slabRates = JSON.parse(localStorage.getItem('slabRates')) || { r1: 4.00, r2: 5.45, r3: 5.70, r4: 6.02, r5: 6.59, r6: 7.35, r7: 7.95 };
+        let charts = {};
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', () => { loadSettings(); renderHistory(); initTheme(); });
+
+        // --- THEME ---
+        function initTheme() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('themeToggle').checked = theme === 'dark';
+            document.getElementById('themeToggle').addEventListener('change', (e) => {
+                const newTheme = e.target.checked ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                renderCharts(); 
+            });
+        }
+
+        // --- TABS ---
+        function switchTab(id) {
+            document.querySelectorAll('.section').forEach(e => e.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            const map = { 'home':0, 'history':1, 'graph':2, 'settings':3 };
+            document.querySelectorAll('.nav-item')[map[id]].classList.add('active');
+            if(id === 'graph') setTimeout(renderCharts, 100);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- CALCULATION ---
+        function calculateBill() {
+            const units = parseFloat(document.getElementById('units').value);
+            const type = document.getElementById('customerType').value;
+            const meterRent = parseFloat(document.getElementById('meterRent').value) || 0;
+            const serviceCharge = parseFloat(document.getElementById('serviceCharge').value) || 0;
+            const fuelAdj = parseFloat(document.getElementById('fuelAdj').value) || 0;
+            const vatPercent = parseFloat(document.getElementById('vatRate').value) || 5;
+
+            if (isNaN(units) || units < 0) { showPopup("Invalid Input", "Please enter a valid number of units.", "error"); return; }
+
+            let energyCharge = 0;
+            if (type === 'residential') energyCharge = calculateResidentialSlab(units);
+            else if (type === 'commercial') energyCharge = units * 10.20;
+            else if (type === 'industrial') energyCharge = units * 11.00;
+
+            const vat = energyCharge * (vatPercent / 100);
+            const total = energyCharge + meterRent + serviceCharge + fuelAdj + vat;
+
+            document.getElementById('resEnergy').innerText = energyCharge.toFixed(2);
+            document.getElementById('resMeter').innerText = meterRent.toFixed(2);
+            document.getElementById('resService').innerText = serviceCharge.toFixed(2);
+            document.getElementById('resFuel').innerText = fuelAdj.toFixed(2);
+            document.getElementById('resVat').innerText = vat.toFixed(2);
+            document.getElementById('resTotal').innerText = total.toFixed(2);
+
+            document.getElementById('resultCard').style.display = 'block';
+            addToHistory(units, type, total);
+        }
+
+        function calculateResidentialSlab(units) {
+            let cost = 0;
+            let remaining = units;
+            if (remaining > 0) { let chunk = Math.min(remaining, 50); cost += chunk * slabRates.r1; remaining -= chunk; }
+            if (remaining > 0) { let chunk = Math.min(remaining, 25); cost += chunk * slabRates.r2; remaining -= chunk; }
+            if (remaining > 0) { let chunk = Math.min(remaining, 125); cost += chunk * slabRates.r3; remaining -= chunk; }
+            if (remaining > 0) { let chunk = Math.min(remaining, 100); cost += chunk * slabRates.r4; remaining -= chunk; }
+            if (remaining > 0) { let chunk = Math.min(remaining, 100); cost += chunk * slabRates.r5; remaining -= chunk; }
+            if (remaining > 0) { let chunk = Math.min(remaining, 200); cost += chunk * slabRates.r6; remaining -= chunk; }
+            if (remaining > 0) { cost += remaining * slabRates.r7; }
+            return cost;
+        }
+
+        // --- HISTORY ---
+        function addToHistory(units, type, total) {
+            const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+            historyData.unshift({ units, type, total, date });
+            if(historyData.length > 20) historyData.pop();
+            localStorage.setItem('billHistory', JSON.stringify(historyData));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            if (!historyData.length) { list.innerHTML = '<p style="text-align:center; color:var(--text-sub); padding:30px;">No history.</p>'; return; }
+            list.innerHTML = historyData.map(i => `
+                <div class="history-item">
+                    <div><h4 style="margin:0;font-size:15px;color:var(--text-main)">${i.type.toUpperCase()}</h4><small style="color:var(--text-sub)">${i.date} • ${i.units} kWh</small></div>
+                    <div class="history-right">৳${i.total.toFixed(0)}</div>
+                </div>`).join('');
+        }
+
+        function clearHistory() { historyData = []; localStorage.removeItem('billHistory'); renderHistory(); renderCharts(); showPopup("History Cleared", "Removed all history.", "success"); }
+
+        // --- CHARTS ---
+        function renderCharts() {
+            const data = [...historyData].slice(0, 6).reverse();
+            const labels = data.map(d => d.date);
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const txt = isDark ? '#94a3b8' : '#444';
+
+            const cfg = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: txt } }, y: { ticks: { color: txt } } } };
+
+            if(charts.usage) charts.usage.destroy();
+            charts.usage = new Chart(document.getElementById('usageChart'), {
+                type: 'line',
+                data: { labels: labels, datasets: [{ data: data.map(d => d.units), borderColor: '#28a745', backgroundColor: 'rgba(40, 167, 69, 0.15)', fill: true, tension: 0.4 }] }, options: cfg
+            });
+
+            if(charts.cost) charts.cost.destroy();
+            charts.cost = new Chart(document.getElementById('costChart'), {
+                type: 'line',
+                data: { labels: labels, datasets: [{ data: data.map(d => d.total), borderColor: '#007bff', backgroundColor: 'rgba(0, 123, 255, 0.15)', fill: true, tension: 0.4 }] }, options: cfg
+            });
+        }
+
+        // --- SETTINGS ---
+        function loadSettings() { for(let i=1; i<=7; i++) document.getElementById(`rate${i}`).value = slabRates[`r${i}`]; }
+        function saveSettings() { for(let i=1; i<=7; i++) slabRates[`r${i}`] = parseFloat(document.getElementById(`rate${i}`).value); localStorage.setItem('slabRates', JSON.stringify(slabRates)); showPopup("Settings Saved", "Rates updated!", "success"); }
+
+        // --- PDF LOGIC (FIXED) ---
+        function exportPDF() {
+            showPopup("Processing...", "Generating PDF...", "success");
+            const element = document.getElementById('billContent');
+            
+            const originalStyle = { background: element.style.background, color: element.style.color, padding: element.style.padding, borderRadius: element.style.borderRadius, boxShadow: element.style.boxShadow };
+            
+            element.style.background = "#ffffff";
+            element.style.color = "#000000";
+            element.style.padding = "20px";
+            element.style.borderRadius = "0px";
+            element.style.boxShadow = "none";
+            
+            const headers = element.querySelectorAll('h2, span, small, .amount');
+            headers.forEach(el => el.style.color = "#000000");
+
+            const opt = {
+                margin: 10,
+                filename: `Electricity_Bill.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, scrollY: 0, backgroundColor: "#ffffff", windowWidth: document.documentElement.offsetWidth },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).output('datauristring').then(function (pdfAsString) {
+                element.style.background = originalStyle.background;
+                element.style.color = originalStyle.color;
+                element.style.padding = originalStyle.padding;
+                element.style.borderRadius = originalStyle.borderRadius;
+                element.style.boxShadow = originalStyle.boxShadow;
+                headers.forEach(el => el.style.color = "");
+
+                if (typeof Android !== "undefined" && Android.saveBase64Pdf) {
+                    Android.saveBase64Pdf(pdfAsString);
+                    showPopup("Saved!", "Check Downloads folder.", "success");
+                } else {
+                    html2pdf().set(opt).from(element).save();
+                }
+            }).catch(err => {
+                element.style.background = originalStyle.background;
+                headers.forEach(el => el.style.color = "");
+            });
+        }
+</script>
+  </body>
+</html>
